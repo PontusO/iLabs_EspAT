@@ -1,13 +1,13 @@
 
-# WiFiEspAT library
+# iLabs-esp-at library
 
-This library creates standard Arduino WiFi networking API over ESP8266 or ESP32 AT commands. The Arduino WiFi networking API was established by Arduino WiFi library and enhanced by Arduino WiFi101 and Arduino WiFiNINA library.
+This library is a fork from JAndrassy/WiFiEspAT, with iLabs specific additions, that creates a standard Arduino WiFi / BLE networking API over ESP8266 or ESP32 AT commands. The Arduino WiFi networking API was established by Arduino WiFi library and enhanced by Arduino WiFi101 and Arduino WiFiNINA library as well as the standard BLE library.
 
-This library is fast and reliable. It can communicate with AT firmware at high baud rates without flow control, limited only by reliability of UART at chosen speed.
+This library is fast and reliable. It can communicate with AT firmware at high baud rates with or without flow control, limited only by reliability of UART at chosen speed.
 
-The library is for all Arduino MCU architectures.
+This modified library is targeted to work optimally with our own Challenger boards based on an RP2040 with either an ESP8285, ESP32-C3 or ESP32-C6 chip on board. It will however probably work with most implementations that use the esp-at stack.
 
-![MKR Zero with esp-01S](mkrzero-esp-01s.jpg)
+![The Challenger RP2040 WiFi6/BLE board](https://usercontent.one/wp/ilabs.se/wp-content/uploads/2023/06/iso-2-1024x768.jpg)
 
 ## Contents
 
