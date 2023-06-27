@@ -55,7 +55,7 @@ struct LinkInfo {
 
 class EspAtDrvClass {
 public:
-
+  // WiFi part of the driver
   bool init(Stream* serial, int8_t resetPin = -1);
 
   bool reset(int8_t resetPin = -1);
@@ -126,6 +126,13 @@ public:
   bool deepSleep();
 
   void ip2str(const IPAddress& ip, char* s);
+
+  // BLE part of the driver
+  bool bleInit(int role);
+  // GATTS
+  bool discoverGATTServices();
+  bool setPublicBdAddr(const char *addr, bool addr_type = 1);
+  char *getPublicBdAddr();
 
 private:
   Stream* serial;

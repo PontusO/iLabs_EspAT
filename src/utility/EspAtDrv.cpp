@@ -1415,6 +1415,56 @@ void EspAtDrvClass::ip2str(const IPAddress& ip, char* s) {
   itoa(ip[3], s + l + 1, 10);
 }
 
+/*****************************************************************************
+ * BLE section
+ ****************************************************************************/
+bool EspAtDrvClass::bleInit(int role) {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Initialize BLE"));
+
+  cmd->print(F("AT+BLEINIT="));
+  cmd->print(role);
+  return sendCommand();
+}
+
+/*
+ * addr_type 1 = Random address
+ */
+bool EspAtDrvClass::setPublicBdAddr(const char *addr, bool addr_type) {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Setting BD address"));
+
+  cmd->print(F("AT+BLEADDR="));
+  cmd->print(addr_type);
+  cmd->print(F(",\""));
+  cmd->print(addr);
+  cmd->print(F("\""));
+  return sendCommand();
+}
+
+char * EspAtDrvClass::getPublicBdAddr() {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Getting BD address"));
+
+  cmd->print(F("AT+BLEADDR?"));
+  if (!sendCommand(PSTR("+BLEADDR:")))
+    return NULL;
+  
+  char *res = buffer + strlen("+BLEADDR:");
+  readOK();
+
+  return res;
+}
+
+/*****************************************************************************
+ * Private section
+ ****************************************************************************/
 uint8_t EspAtDrvClass::freeLinkId() {
   maintain();
   for (int linkId = LINKS_COUNT - 1; linkId >= 0; linkId--) {
