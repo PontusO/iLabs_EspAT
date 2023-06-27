@@ -30,7 +30,11 @@ extern "C" {
 
 #include <stdint.h>
 
-#define BD_ADDR_LEN       6
+#define LE_ADVERTISING_DATA_SIZE    31
+#define BD_ADDR_LEN                 6
+
+#define READ_NET_32(buffer, pos)    (((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos])) << 24)
+
 typedef uint8_t bd_addr_t[BD_ADDR_LEN];
 
 typedef enum BLERole {
@@ -56,6 +60,43 @@ public:
     const uint8_t * getAddress();
     const char * getAddressString();
     BD_ADDR_TYPE getAddressType();
+};
+
+class UUID {
+private:
+    uint8_t uuid[16];
+public:
+    UUID();
+    UUID(const uint8_t uuid[16]);
+    UUID(const char * uuidStr);
+    const char * getUuidString()    const;
+    const char * getUuid128String() const;
+    const uint8_t * getUuid(void)   const;
+    bool matches(UUID *uuid)        const;
+};
+
+class BLEAdvertisement {
+private:
+    uint8_t advertising_event_type;
+    uint8_t rssi;
+    uint8_t data_length;
+    uint8_t data[10 + LE_ADVERTISING_DATA_SIZE];
+    BD_ADDR  bd_addr;
+    UUID * iBeacon_UUID;
+public:
+    BLEAdvertisement(uint8_t * event_packet);
+    ~BLEAdvertisement();
+    BD_ADDR * getBdAddr();
+    BD_ADDR_TYPE getBdAddrType();
+    int getRssi();
+    bool containsService(UUID * service);
+    bool nameHasPrefix(const char * namePrefix);
+    const uint8_t * getAdvData();
+    bool isIBeacon();
+    const UUID * getIBeaconUUID();
+    uint16_t     getIBeaconMajorID();
+    uint16_t     getIBecaonMinorID();
+    uint8_t      getiBeaconMeasuredPower();
 };
 
 class BLEManager {
