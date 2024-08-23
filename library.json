@@ -1,0 +1,24 @@
+{
+    "name": "iLabs_Bi2C_KBD",
+    "description": "Control library for the iLabs Bi2C keybard",
+    "keywords": "RP2040, iLabs, IIC, I2C",
+    "authors": [
+        {
+            "name": "Pontus Oldberg",
+            "email": "pontus@ilabs.se",
+            "url": "",
+            "maintainer": true
+        }
+    ],
+    "repository": {
+        "type": "git",
+         "url": "https://github.com/PontusO/iLabs_Bi2C_KBD"
+    },
+    "version": "1.0.0",
+    "homepage": "https://github.com/PontusO/iLabs_Bi2C_KBD",
+    "frameworks": "Arduino",
+    "examples": [
+        "examples/*/*.ino"
+    ],
+	}
+}

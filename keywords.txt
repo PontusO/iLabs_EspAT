@@ -1,0 +1,42 @@
+#######################################
+# Syntax Coloring Map for EspATMQTT
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+Bi2C_KBD	KEYWORD1
+bi2c_kbd	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+reset	KEYWORD2
+available	KEYWORD2
+read	KEYWORD2
+flush	KEYWORD2
+disableNumKeys	KEYWORD2
+disableAlphaKeys	KEYWORD2
+setLEDMode	KEYWORD2
+getLEDMode	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+LED_OFF	LITERAL1
+LED_ON	LITERAL1
+LED_BLINK_1HZ	LITERAL1
+LED_BLINK_2HZ	LITERAL1
+LED_BLINK_4HZ	LITERAL1
+LED_CANDLE	LITERAL1
+LED_MODE_END	LITERAL1
+NUM_LEDS	LITERAL1
+STATUS_LED	LITERAL1
+INDICATOR_LED_A	LITERAL1
+INDICATOR_LED_B	LITERAL1
+INDICATOR_LED_C	LITERAL1
+INDICATOR_LED_D	LITERAL1

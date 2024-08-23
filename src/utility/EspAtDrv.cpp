@@ -44,6 +44,12 @@ const char QOUT_COMMA_QOUT[] PROGMEM = "\",\"";
 const char PROCESSED[] PROGMEM = " ...processed";
 const char IGNORED[] PROGMEM = " ...ignored";
 
+static bool (*unsolicitedMessage)(char *buffer) = NULL;
+
+void EspAtDrvClass::setUnsolicitedMessageCallback(bool (*callback)(char *buffer)){
+    unsolicitedMessage = callback;
+}
+
 #if WIFIESPAT_LOG_LEVEL >= LOG_LEVEL_DEBUG
 class DebugPrint : public Print {
 public:
@@ -1424,6 +1430,8 @@ bool EspAtDrvClass::bleInit(int role) {
   LOG_INFO_PRINT_PREFIX();
   LOG_INFO_PRINTLN(F("Initialize BLE"));
 
+  //simpleCommand(PSTR("AT+SYSLOG=1"));
+
   cmd->print(F("AT+BLEINIT="));
   cmd->print(role);
   return sendCommand();
@@ -1460,6 +1468,214 @@ char * EspAtDrvClass::getPublicBdAddr() {
   readOK();
 
   return res;
+}
+
+bool EspAtDrvClass::setName(const char *name) {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Setting name"));
+
+  cmd->print(F("AT+BLENAME=\""));
+  cmd->print(name);
+  cmd->print(F("\""));
+
+  return sendCommand();
+}
+
+char *EspAtDrvClass::getName() {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Getting name"));
+
+  cmd->print(F("AT+BLENAME?"));
+  if (!sendCommand(PSTR("+BLENAME:")))
+    return NULL;
+  
+  char *res = buffer + strlen("+BLENAME:");
+  readOK();
+
+  return res;
+}
+
+bool EspAtDrvClass::setScanParams(const char *scan_params) {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Setting scan parameters"));
+
+  cmd->print(F("AT+BLESCANPARAM="));
+  cmd->print(scan_params);
+
+  return sendCommand();
+}
+
+bool EspAtDrvClass::startScan(const char *scan_string) {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Starting BLE scanner"));
+  
+  cmd->print(F("AT+BLESCAN="));
+  cmd->print(scan_string);
+
+  return sendCommand();
+}
+
+/**
+ * AT+BLEADVPARAM=<adv_int_min>,<adv_int_max>,<adv_type>,<own_addr_type>,
+ *                <channel_map>[,<adv_filter_policy>][,<peer_addr_type>,
+ *                <peer_addr>][,<primary_phy>,<secondary_phy>]
+*/
+bool EspAtDrvClass::setAdvertisementParams(const char *adv_params) {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Setting advertisement parameters"));
+  
+  cmd->print(F("AT+BLEADVPARAM="));
+  cmd->print(adv_params);
+
+  return sendCommand();
+}
+
+bool EspAtDrvClass::setAdvData(const char *adv_data) {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Setting advertising data"));
+  
+  cmd->print(F("AT+BLEADVDATA=\""));
+  cmd->print(adv_data);
+  cmd->print(F("\""));
+
+  return sendCommand();
+}
+
+bool EspAtDrvClass::startAdvertising() {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Starting the advertising service"));
+
+  return simpleCommand(PSTR("AT+BLEADVSTART"));
+}
+
+bool EspAtDrvClass::stopAdvertising() {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Stopping the advertising service"));
+
+  return simpleCommand(PSTR("AT+BLEADVSTOP"));
+}
+
+bool EspAtDrvClass::startAdvertisingEx(const char *adv_string) {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Starting simplified advertising"));
+  
+  cmd->print(F("AT+BLEADVDATAEX="));
+  cmd->print(adv_string);
+
+  return sendCommand();
+}
+
+void EspAtDrvClass::process() {
+  maintain();
+}
+
+bool EspAtDrvClass::bleConnect(const char *connection_string) {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Connecting to other BLE device"));
+  
+  cmd->print(F("AT+BLECONN="));
+  cmd->print(connection_string);
+
+  bool res = sendCommand();
+  readOK();
+  return res;
+}
+
+bool EspAtDrvClass::updateConnParams(const char *param_string) {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Updating connection parameters."));
+  
+  cmd->print(F("AT+BLECONNPARAM="));
+  cmd->print(param_string);
+
+  return sendCommand();
+}
+
+bool EspAtDrvClass::updateMtuSize(const char *mtu_string) {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Updating MTU size."));
+
+  cmd->print(F("AT+BLECFGMTU="));
+  cmd->print(mtu_string);
+
+  return sendCommand();
+}
+
+char *EspAtDrvClass::getMtuSize() {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Fetching MTU size."));
+
+  cmd->print(F("AT+BLECFGMTU?"));
+
+  if (!sendCommand(PSTR("+BLECFGMTU:")))
+    return NULL;
+  
+  char *res = buffer + strlen("+BLECFGMTU:");
+  readOK();
+
+  return res;
+}
+
+bool EspAtDrvClass::discoverCGATTServices(const char *gatt_string) {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Starting Client GATT discovery."));
+
+  cmd->print(F("AT+BLEGATTCPRIMSRV="));
+  cmd->print(gatt_string);
+
+  return sendCommand();
+}
+
+bool EspAtDrvClass::discoverCGATTServicesCharacteristics(const char *gattc_string) {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Discover GATT characteristics."));
+
+  cmd->print(F("AT+BLEGATTCCHAR="));
+  cmd->print(gattc_string);
+
+  return sendCommand();
+}
+
+bool EspAtDrvClass::discoverCGATTIncludedServices(const char *gattc_string) {
+  maintain();
+
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINTLN(F("Discover GATT included services."));
+
+  cmd->print(F("AT+BLEGATTCINCLSRV="));
+  cmd->print(gattc_string);
+
+  return sendCommand();
 }
 
 /*****************************************************************************
@@ -1544,6 +1760,17 @@ bool EspAtDrvClass::readRX(PGM_P expected, bool bufferData, bool listItem) {
         l--; // trim \r
       }
       buffer[l] = 0; // terminate the string
+      // Check for unsolicited data, run callback if defined.
+      if (unsolicitedMessage) {
+        char mBuf[64];
+        memcpy(mBuf, buffer, 64);
+        if (unsolicitedMessage(mBuf)) {
+          LOG_DEBUG_PRINT_PREFIX();
+          LOG_DEBUG_PRINT(buffer);
+          LOG_DEBUG_PRINTLN(F(" ...matched"));
+          return true;
+        }
+      }
     }
     LOG_DEBUG_PRINT_PREFIX();
     LOG_DEBUG_PRINT(buffer);

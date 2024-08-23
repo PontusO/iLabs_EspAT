@@ -55,6 +55,7 @@ struct LinkInfo {
 
 class EspAtDrvClass {
 public:
+  void setUnsolicitedMessageCallback(bool (*callback)(char *buffer));
   // WiFi part of the driver
   bool init(Stream* serial, int8_t resetPin = -1);
 
@@ -133,6 +134,34 @@ public:
   bool discoverGATTServices();
   bool setPublicBdAddr(const char *addr, bool addr_type = 1);
   char *getPublicBdAddr();
+
+  bool setName(const char *name);
+  char *getName();
+
+  bool setScanParams(const char *scan_params);
+  bool startScan(const char *scan_string);
+
+  bool setAdvertisementParams(const char *adv_params);
+  bool setAdvData(const char *adv_data);
+  bool startAdvertising();
+  bool startAdvertisingEx(const char *adv_string);
+  bool stopAdvertising();
+
+  bool bleConnect(const char *connection_string);
+  bool updateConnParams(const char *param_string);
+
+  bool updateMtuSize(const char *mtu_string);
+  char *getMtuSize();
+
+  bool discoverCGATTServices(const char *gatt_string);
+  bool discoverSGATTServices(const char *gatt_string);
+
+  bool discoverCGATTServicesCharacteristics(const char *gattc_string);
+  bool discoverSGATTServicesCharacteristics(const char *gattc_string);
+
+  bool discoverCGATTIncludedServices(const char *gattc_string);
+
+  void process();
 
 private:
   Stream* serial;

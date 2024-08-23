@@ -31,7 +31,8 @@
 #define LOG_LEVEL_DEBUG  4
 
 #ifndef WIFIESPAT_LOG_LEVEL
-#define WIFIESPAT_LOG_LEVEL LOG_LEVEL_DEBUG   // TODO: Change to silent before commit
+#define WIFIESPAT_LOG_LEVEL LOG_LEVEL_ERROR
+//#define WIFIESPAT_LOG_LEVEL LOG_LEVEL_DEBUG   // TODO: Change to silent before commit
 #endif
 
 #ifdef ARDUINO_SAM_ZERO // M0
