@@ -21,13 +21,21 @@
 #define _WIFICLIENT_H_
 
 #include <Client.h>
-#include "WiFiEspAtBuffStream.h"
+#include "WiFiEspAtSharedBuffStreamPtr.h"
 #include "WiFiEspAtConfig.h"
 
 enum WiFiTcpState {
   CLOSED      = 0,
   LISTEN      = 1,
-  ESTABLISHED = 4
+  SYN_SENT    = 2,
+  SYN_RCVD    = 3,
+  ESTABLISHED = 4,
+  FIN_WAIT_1  = 5,
+  FIN_WAIT_2  = 6,
+  CLOSE_WAIT  = 7,
+  CLOSING     = 8,
+  LAST_ACK    = 9,
+  TIME_WAIT   = 10
 };
 
 class WiFiServer;
@@ -35,7 +43,7 @@ class WiFiServer;
 class WiFiClient : public Client {
 
   friend WiFiServer;
-  WiFiClient(uint8_t linkId, uint16_t serverPort);
+  WiFiClient(uint8_t linkId);
 
 public:
   WiFiClient();
@@ -75,7 +83,7 @@ private:
   int connect(bool ssl, IPAddress ip, uint16_t port);
   int connect(bool ssl, const char *host, uint16_t port);
 
-  WiFiEspAtBuffStream* stream = nullptr;
+  WiFiEspAtSharedBuffStreamPtr stream;
 
 };
 

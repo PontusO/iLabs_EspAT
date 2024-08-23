@@ -20,26 +20,42 @@
 #include <Arduino.h>
 #include "WiFiEspAtBuffStream.h"
 #include "utility/EspAtDrv.h"
+#include "utility/EspAtDrvLogging.h"
 
 void WiFiEspAtBuffStream::setUdpPort(const char* _udpHost, uint16_t _udpPort) {
   udpHost = _udpHost;
-  port = _udpPort;
+  udpPort = _udpPort;
+}
+
+bool WiFiEspAtBuffStream::checkLink() {
+  if (linkId != NO_LINK && EspAtDrv.getLastErrorCode() == EspAtDrvError::LINK_NOT_ACTIVE) {
+    linkId = NO_LINK;
+    available(); // calls free() if receive buffer is empty
+  }
+  return linkId != NO_LINK;
 }
 
 bool WiFiEspAtBuffStream::connected() {
   if (linkId != NO_LINK && !EspAtDrv.connected(linkId)) {
     linkId = NO_LINK;
+    available(); // calls free() if receive buffer is empty
   }
   return (linkId != NO_LINK);
 }
 
 void WiFiEspAtBuffStream::free() {
-  assigned = false;
+  if (!serialId)
+    return;
+  LOG_INFO_PRINT_PREFIX();
+  LOG_INFO_PRINT(F("free BuffStream "));
+  LOG_INFO_PRINTLN(serialId);
+  serialId = 0;
+  refCount = 0;
   linkId = NO_LINK;
   rxBufferLength = 0;
   rxBufferIndex = 0;
   txBufferLength = 0;
-  port = 0;
+  udpPort = 0;
 }
 
 void WiFiEspAtBuffStream::close(bool abort) {
@@ -50,6 +66,10 @@ void WiFiEspAtBuffStream::close(bool abort) {
 }
 
 size_t WiFiEspAtBuffStream::write(uint8_t b) {
+  if (linkId == NO_LINK) {
+    setWriteError();
+    return 0;
+  }
   txBuffer[txBufferLength++] = b;
   if (txBufferLength == txBufferSize) {
     flush();
@@ -66,8 +86,13 @@ size_t WiFiEspAtBuffStream::write(const uint8_t *data, size_t length) {
   }
   if (length == 0)
     return 0;
-  if (txBufferLength == 0 && length > txBufferSize) // if internal buffer is empty and provided buffer is large
-    return EspAtDrv.sendData(linkId, data, length, udpHost, port); // send it right away
+  if (txBufferLength == 0 && length > txBufferSize) { // if internal buffer is empty and provided buffer is large
+    size_t res = EspAtDrv.sendData(linkId, data, length, udpHost, udpPort); // send it right away
+    if (res != length && !checkLink()) {
+      setWriteError();
+    }
+    return res;
+  }
 
   size_t a = txBufferSize - txBufferLength; // available space in internal buffer
   for (size_t i = 0; i < a && i < length; i++) { // copy data to internal buffer
@@ -85,33 +110,48 @@ size_t WiFiEspAtBuffStream::write(const uint8_t *data, size_t length) {
 void WiFiEspAtBuffStream::flush() {
   if (txBufferLength == 0)
     return;
-  size_t res = EspAtDrv.sendData(linkId, txBuffer, txBufferLength, udpHost, port);
-  setWriteError(res != txBufferLength);
+  size_t res = EspAtDrv.sendData(linkId, txBuffer, txBufferLength, udpHost, udpPort);
+  if (res != txBufferLength) {
+    setWriteError(1);
+    checkLink();
+  }
   txBufferLength = 0;
 }
 
 int WiFiEspAtBuffStream::availableForWrite() {
+  if (linkId == NO_LINK) {
+    setWriteError();
+    return 0;
+  }
   return txBufferSize - txBufferLength;
 }
 
 size_t WiFiEspAtBuffStream::write(Stream& file) {
   flush();
-  return EspAtDrv.sendData(linkId, file, udpHost, port);
+  size_t res = EspAtDrv.sendData(linkId, file, udpHost, udpPort);
+  checkLink();
+  return res;
 }
 
 size_t WiFiEspAtBuffStream::write(SendCallbackFnc callback) {
   flush();
-  return EspAtDrv.sendData(linkId, callback, udpHost, port);
+  size_t res = EspAtDrv.sendData(linkId, callback, udpHost, udpPort);
+  checkLink();
+  return res;
 }
 
 int WiFiEspAtBuffStream::available() {
   size_t a = (rxBufferLength - rxBufferIndex);
-  if (linkId == NO_LINK)
+  if (linkId == NO_LINK) {
+    if (a == 0) {
+      free();
+    }
     return a;
+  }
   if (a == 0) {
     a = EspAtDrv.availData(linkId);
   }
-  if (a == 0) {
+  if (a == 0 && checkLink()) {
     flush(); // maybe sketch is waiting for response without flushing the request
   }
   return a;

@@ -22,38 +22,35 @@
 
 #include "WiFiClient.h"
 
+#ifndef WIFIESPAT_SERVER_MAX_CLIENTS
+#define WIFIESPAT_SERVER_MAX_CLIENTS 1
+#endif
+
+#ifndef WIFIESPAT_SERVER_CLIENT_TIMEOUT
+#define WIFIESPAT_SERVER_CLIENT_TIMEOUT 60  // seconds
+#endif
+
 class WiFiServer {
 
 public:
-  WiFiServer(uint16_t);
-  void begin( uint8_t maxConnCount = 1, uint16_t serverTimeout = 60);
-  void beginSSL(bool ca = false, uint8_t maxConnCount = 1, uint16_t serverTimeout = 60);
+  WiFiServer(uint16_t port = 80);
+  void begin() { begin(WIFIESPAT_SERVER_MAX_CLIENTS, WIFIESPAT_SERVER_CLIENT_TIMEOUT); }
+  void begin(uint8_t maxConnCount, uint16_t serverTimeout);
+  void begin(uint16_t port) { begin(port, WIFIESPAT_SERVER_MAX_CLIENTS, WIFIESPAT_SERVER_CLIENT_TIMEOUT); }
+  void begin(uint16_t port, uint8_t maxConnCount, uint16_t serverTimeout);
+  void beginSSL() { beginSSL(false, WIFIESPAT_SERVER_MAX_CLIENTS, WIFIESPAT_SERVER_CLIENT_TIMEOUT); }
+  void beginSSL(bool ca, uint8_t maxConnCount, uint16_t serverTimeout);
+  void beginSSL(uint16_t port) { beginSSL(port, false, WIFIESPAT_SERVER_MAX_CLIENTS, WIFIESPAT_SERVER_CLIENT_TIMEOUT); }
+  void beginSSL(uint16_t port, bool ca, uint8_t maxConnCount, uint16_t serverTimeout);
   void end();
   uint8_t status();
-  WiFiClient available(bool accept = false);
-  WiFiClient accept() {return available(true);}
+  WiFiClient available() __attribute__((deprecated("Use accept().")));
+  WiFiClient accept();
   virtual operator bool();
-
-protected:
-  size_t writeToAllClients(const uint8_t *buf, size_t size);
-  void flushAllClients();
 
 private:
   uint16_t port;
   uint8_t state;
-};
-
-class WiFiServerPrint : public WiFiServer, public Print {
-
-public:
-  WiFiServerPrint(uint16_t port) : WiFiServer(port) {}
-
-  virtual size_t write(uint8_t);
-  virtual size_t write(const uint8_t *buf, size_t size);
-  virtual void flush();
-
-  using Print::write;
-
 };
 
 #endif

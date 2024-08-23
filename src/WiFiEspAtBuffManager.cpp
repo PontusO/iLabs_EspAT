@@ -19,6 +19,7 @@
 
 #include "WiFiEspAtBuffManager.h"
 #include "utility/EspAtDrvLogging.h"
+#include "utility/EspAtDrv.h"
 
 WiFiEspAtBuffManagerClass::WiFiEspAtBuffManagerClass() {
   for (int i = 0; i < WIFIESPAT_LINKS_COUNT; i++) {
@@ -26,10 +27,7 @@ WiFiEspAtBuffManagerClass::WiFiEspAtBuffManagerClass() {
   }
 }
 
-WiFiEspAtBuffStream* WiFiEspAtBuffManagerClass::getBuffStream(uint8_t linkId, uint16_t serverPort, size_t rxBufferSize, size_t txBufferSize) {
-
-  if (linkId == WIFIESPAT_NO_LINK)
-    return nullptr;
+WiFiEspAtBuffStream* WiFiEspAtBuffManagerClass::getBuffStream(uint8_t linkId, size_t rxBufferSize, size_t txBufferSize) {
 
   int freePos = -1;
 
@@ -38,40 +36,21 @@ WiFiEspAtBuffStream* WiFiEspAtBuffManagerClass::getBuffStream(uint8_t linkId, ui
       freePos = i;
       break;
     }
-    if (pool[i]->linkId == linkId) {
-      if (serverPort && serverPort == pool[i]->port) {
-        LOG_INFO_PRINT_PREFIX();
-        LOG_INFO_PRINT(F("BuffManager returned buff.stream at "));
-        LOG_INFO_PRINT(i);
-        LOG_INFO_PRINT(F(" for server at port "));
-        LOG_INFO_PRINT(serverPort);
-        LOG_INFO_PRINT(F(" and client's linkId "));
-        LOG_INFO_PRINTLN(linkId);
-        return pool[i];
-      } else {
-        pool[i]->free();
-        LOG_WARN_PRINT_PREFIX();
-        LOG_WARN_PRINT(F("BuffManager cleared linkId "));
-        LOG_WARN_PRINT(linkId);
-        LOG_WARN_PRINT(F(" at "));
-        LOG_WARN_PRINTLN(i);
-      }
-    }
-    if (pool[i]->assigned)
+    if (pool[i]->serialId)
       continue;
     if (pool[i]->rxBufferSize == rxBufferSize && pool[i]->txBufferSize == txBufferSize) {
       pool[i]->linkId = linkId;
-      pool[i]->port = serverPort;
-      pool[i]->assigned = true;
+      pool[i]->serialId = nextSerialId();
       LOG_INFO_PRINT_PREFIX();
-      LOG_INFO_PRINT(F("BuffManager returned buff.stream at "));
+      LOG_INFO_PRINT(F("BuffManager returned buff.stream id "));
+      LOG_INFO_PRINT(serialId);
+      LOG_INFO_PRINT(F(" at index "));
       LOG_INFO_PRINT(i);
-      if (serverPort) {
-        LOG_INFO_PRINT(F(" for server at port "));
-        LOG_INFO_PRINT(serverPort);
+      if (linkId != WIFIESPAT_NO_LINK) {
+        LOG_INFO_PRINT(F(" for linkId "));
+        LOG_INFO_PRINT(linkId & INDEX_MASK);
       }
-      LOG_INFO_PRINT(F(" for linkId "));
-      LOG_INFO_PRINTLN(linkId);
+      LOG_INFO_PRINTLN();
       return pool[i];
     }
   }
@@ -90,18 +69,17 @@ WiFiEspAtBuffStream* WiFiEspAtBuffManagerClass::getBuffStream(uint8_t linkId, ui
   res->rxBufferSize = rxBufferSize;
   res->txBufferSize = txBufferSize;
   res->linkId = linkId;
-  res->port = serverPort;
-  res->assigned = true;
+  res->serialId = nextSerialId();
   pool[freePos] = res;
   LOG_INFO_PRINT_PREFIX();
-  LOG_INFO_PRINT(F("BuffManager new buff.stream at "));
+  LOG_INFO_PRINT(F("BuffManager new buff.stream id "));
+  LOG_INFO_PRINT(serialId);
+  LOG_INFO_PRINT(F(" at index "));
   LOG_INFO_PRINT(freePos);
-  if (serverPort) {
-    LOG_INFO_PRINT(F(" for server at port "));
-    LOG_INFO_PRINT(serverPort);
+  if (linkId != WIFIESPAT_NO_LINK) {
+    LOG_INFO_PRINT(F(" for linkId "));
+    LOG_INFO_PRINT(linkId & INDEX_MASK);
   }
-  LOG_INFO_PRINT(F(" for linkId "));
-  LOG_INFO_PRINT(linkId);
   LOG_INFO_PRINT(F(" rx "));
   LOG_INFO_PRINT(rxBufferSize);
   LOG_INFO_PRINT(F(" tx "));
@@ -138,5 +116,17 @@ void WiFiEspAtBuffManagerClass::freeUnused() {
   }
 }
 
+uint8_t WiFiEspAtBuffManagerClass::nextSerialId() {
+  while (true) {
+    serialId++;
+    int i = 0;
+    for (; i < WIFIESPAT_LINKS_COUNT; i++) {
+      if (pool[i] == nullptr || pool[i]->serialId == serialId)
+        break;
+    }
+    if (i == WIFIESPAT_LINKS_COUNT || pool[i] == nullptr)
+      return serialId;
+  }
+}
 
 WiFiEspAtBuffManagerClass WiFiEspAtBuffManager;

@@ -58,7 +58,7 @@ void setup() {
   }
   Serial.println();
 
-  server.begin(3);
+  server.begin(3, 60);
 
   IPAddress ip = WiFi.localIP();
   Serial.println();
@@ -73,7 +73,7 @@ void loop() {
   static File file; // must by static to be accessible by the lambda functions
   static char fn[32];
 
-  WiFiClient client = server.available();
+  WiFiClient client = server.accept();
 
   if (client && client.connected()) {
     if (client.find(' ')) { // GET /fn HTTP/1.1

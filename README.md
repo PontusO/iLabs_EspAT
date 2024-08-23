@@ -1,3 +1,22 @@
+<details>
+  <summary>**Version 2 Upgrade Notes** (click to expand)</summary>
+
+Version 2 has major improvements for WiFiClient:
+
+* it closes the connection as soon as no WiFiClient object references it (when last copy is cleared or goes out of scope) 
+* it detects that connection was closed by peer and releases the link. As soon as all data are read by the sketch it makes the internal buffer available for next connection. It is not necessary to call stop() on connection disconnected by the remote side.
+* in version 1 an old WiFiClient copy could interfere on a new connection on the same AT link. This is very unlikely to happen in version 2.
+
+Version 2 has some breaking changes:
+
+* Version 1 returned MAC address and BSSID in reversed ordering because 5 years ago all Arduino WiFi libraries had it that way. Version 2 returns MAC address and BSSID in normal ordering.
+
+* Version 2 removes `server.available()` function from the library. The functions is still there but only as alias for `server.accept()`. It will work for most use cases. For proper `server.available()`with help of the NetApiHelpers library see the PagerServer example.
+
+* Version 1 had optimized UDP classes WiFiUdpSender and WiFiEspAtUDP. These are removed in version 2. WiFiUDP has the functionality of both of them.
+
+* In version 1 `WiFi.disconnect()` cleared the static IP configuration. In version 2 the static IP configuration is preserved for next `WiFi.begin()`. To return to DHCP clear the static IP configuration with `WiFi.config(INADDR_NONE)`. All Arduino WiFi libraries have it this way.
+</details>
 
 # iLabs-esp-at library
 
@@ -6,6 +25,10 @@ This library is a fork from JAndrassy/WiFiEspAT, with iLabs specific additions, 
 This library is fast and reliable. It can communicate with AT firmware at high baud rates with or without flow control, limited only by reliability of UART at chosen speed.
 
 This modified library is targeted to work optimally with our own Challenger boards based on an RP2040 with either an ESP8285, ESP32-C3 or ESP32-C6 chip on board. It will however probably work with most implementations that use the esp-at stack.
+
+WiFiEspAT supports wired Ethernet with esp8266 or esp32 with an Ethernet module, AT firmware with Ethernet support and the [EthernetEspAT](https://github.com/Networking-for-Arduino/EthernetEspAT) library.
+
+The library is for all Arduino MCU architectures.
 
 ![The Challenger RP2040 WiFi6/BLE board](https://usercontent.one/wp/ilabs.se/wp-content/uploads/2023/06/iso-2-1024x768.jpg)
 
@@ -26,7 +49,7 @@ This modified library is targeted to work optimally with our own Challenger boar
 
 ## Getting started
 
-* Put AT firmware a supported version of the AT firmware into the ESP you want to use with the WiFiEspAT library. Make sure the firmware is working and returning OK to test command "AT".
+* Put a supported version of the AT firmware into the ESP you want to use with the WiFiEspAT library. Make sure the firmware is working and returning OK to test command "AT".
 
 
 * Wire the ESP module to Serial1 of your Arduino. Wire RX to TX. If your Arduino doesn't have Serial1, wire the ESP module to pins 6 as RX and 7 as TX for SoftwareSerial.
@@ -49,7 +72,7 @@ This modified library is targeted to work optimally with our own Challenger boar
 
 ## Why a new WiFiEsp library?
 
-This library uses the new passive receive mode implemented in AT firmware 1.7 (Non OS SDK 3) and AT firmware 2.4+ (RTOS SDK). The [older WiFiEsp library](https://github.com/bportaluri/WiFiEsp) can't do much with larger data received. Without the passive receive mode, the AT firmware sends all the data at once and the serial RX buffer overflows. It is hard to receive more data over network with AT firmware without UART hardware flow control and Arduino AVR boards don't have flow control and simple esp8266 modules don't have the flow control pins exposed.
+This library uses the passive receive mode implemented in AT firmware 1.7 (Non OS SDK 3) and AT firmware 2.4+ (IDF). The [older WiFiEsp library](https://github.com/bportaluri/WiFiEsp) can't do much with larger data received. Without the passive receive mode, the AT firmware sends all the data at once and the serial RX buffer overflows. It is hard to receive more data over network with AT firmware without UART hardware flow control and Arduino AVR boards don't have flow control and simple esp8266 modules don't have the flow control pins exposed.
 
 Note: The older WiFiEsp library referenced the AT firmware version by SDK version. This library reports AT commands version.
 
@@ -122,7 +145,7 @@ GitHub user loboris (Boris Lovosevic) builds customized versions of AT firmware 
 Jiri Bilek created [an alternative AT 1.7 firmware implementation](https://github.com/JiriBilek/ESP_ATMod) over esp8266 Arduino core and WiFi library. This supports SSL TLS1.2 connection in passive mode with this library. This firmware doesn't yet support UDP.
 
 Resources:
-* [the Espressif binaries](https://github.com/espressif/ESP8266_NONOS_SDK/releases) - versions 1.7.x in NONOS SDK 3.0.x
+* [the Espressif binaries](https://github.com/espressif/ESP8266_NONOS_SDK/tree/master/bin) - version 1.7.4 in NONOS SDK 3.0.4
 * [AT 1.7 reference](https://www.espressif.com/en/support/documents/technical-documents?keys=Non-OS+AT&field_type_tid%5B%5D=14) - it contains firmware flashing instructions too
 * [AT LoBo flashing instructions](https://github.com/loboris/ESP8266_AT_LoBo/#flashing). First install esptool.py. If you download the AT LoBo repository as zip, it contains the firmware binaries and a script to flash them.
 * [Jiri Bilek's ESP_ATMod](https://github.com/JiriBilek/ESP_ATMod)
@@ -192,6 +215,7 @@ This library implements Arduino WiFi networking API. The last version of this AP
 * `scanNetworks` optionally can be called with array of type `WiFiApData[]` to fill
 * `hostname` to get the hostname. can be called with char array to fill (see PrintPersistentSettings.ino tool example)
 * `SSID` optionally can be called with char array to fill (see PrintPersistentSettings.ino tool example)
+* `channel` getter
 * `dhcpIsEnabled` to determine if DHCP or static IP is used (see PrintPersistentSettings.ino tool example)
 * `beginAP` can be called without parameters to start the persistent AP (see ConfigurationAP.ino example)
 * `endAP` - stops the AP. `endAP(true)` stops the AP and disables start of persistent AP at startup
@@ -217,23 +241,23 @@ The standard AT firmwares support only one TCP server. The ESP_ATMod firmware su
 
 * `begin` has optional parameters maxConnCount (default 1) and serverTimeout in seconds (default 60)
 * `beginSSL` ESP32 only. starts the server for secure connections.
-* `end` to stop the server (the Arduino WiFi libraries can't stop a server)
+* `begin(port)` and `beginSSL(port)` and constructor without parameters
+* `end` to stop the server and the clients managed by the server for available()
 * `accept` like in new [Ethernet library](https://www.arduino.cc/en/Reference/EthernetServerAccept). see the AdvancedChatServer  
+* <del>available</del> - WiFiEspAT version 2 doesn't implement server.available(). See the PagerServer example on how to use the NetApiHelpers library for a WiFiServer	 with `available()`
 
-The WiFiServer class in this library doesn't derive from the Arduino Server class. It doesn't implement the never used 'send to all clients' functionality over Print class methods (print, write). For 'send to all clients' use the WiFiServerPrint class as the PagerServer example.
+The WiFiServer class in this library doesn't derive from the Arduino Server class. It doesn't implement the never used 'send to all clients' functionality with Print class methods (print, write). For 'send to all clients' see the PagerServer example.
 
 ### the UDP differences
 
-The Arduino UDP API requires to start a listening port to send an UDP message. This library doesn't require udp.begin() before udp.beginPacket(). 
+The Arduino UDP API requires to start a listening port to send an UDP message. This library doesn't require udp.begin() before udp.beginPacket(). See the UdpSender.ino example.
 
 * `beginMulticast` works only with AT2
 * `availableForParse` for AT2 only. returns the size of the available message. see the WiFiEspAT2UDP example
 * `parsePacket(buffer, size, ip, port)` for AT2 only. to read the message into provided buffer. see the WiFiEspAT2UDP example 
 * `write(callback)` variant of write function for efficient sending with a callback function
 
-You can use WiFiUdpSender class if you only send messages. See the UdpSender.ino example.
-
-With AT2 You can use WiFiEspAtUDP class if you receive messages with the `parsePacket(buffer, size, ip, port)` function. WiFiEspAtUDP doesn't have internal buffer to receive the message with `parsePacket()` so it saves global memory. See the WiFiEspAT2UDP example. 
+With AT2 You can receive messages with the `parsePacket(buffer, size, ip, port)` function. This doesn't use internal buffer to receive the message with `parsePacket()` so it saves memory. See the WiFiEspAT2UDP example. 
 
 ## Logging
 

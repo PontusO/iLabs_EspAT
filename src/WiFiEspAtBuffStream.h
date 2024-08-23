@@ -52,14 +52,18 @@ public:
 
 private:
   friend class WiFiEspAtBuffManagerClass;
+  friend class WiFiEspAtSharedBuffStreamPtr;
+  friend class WiFiUDP;
 
   void fillRXbuffer();
   void setWriteError(int8_t err = -1) {writeError = err;}
+  bool checkLink();
 
-  bool assigned = false;
+  uint8_t serialId = 0;
+  uint8_t refCount = 0;
   uint8_t linkId = WIFIESPAT_NO_LINK;
   const char* udpHost = nullptr;
-  uint16_t port = 0;
+  uint16_t udpPort = 0;
 
   int8_t writeError = 0;
 

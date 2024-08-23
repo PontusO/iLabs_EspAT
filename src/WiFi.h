@@ -29,10 +29,13 @@
 #include "WiFiUdp.h"
 #include "WiFiSSLClient.h"
 
+#define WIFIESPAT_LIB_VERSION 2
+
 enum {
   WL_NO_SHIELD = 255,
   WL_NO_MODULE = WL_NO_SHIELD,
   WL_IDLE_STATUS = 0,
+  WL_NO_SSID_AVAIL,
   WL_CONNECTED,
   WL_CONNECT_FAILED,
   WL_CONNECTION_LOST,
@@ -43,10 +46,14 @@ enum {
 };
 
 /* Encryption modes */
-enum wl_enc_type {  /* Values map to 802.11 encryption suites... */
+enum wl_enc_type {  /* Values map to 802.11 Cipher Algorithm Identifier */
   ENC_TYPE_WEP  = 5,
   ENC_TYPE_TKIP = 2,
+  ENC_TYPE_WPA = ENC_TYPE_TKIP,
   ENC_TYPE_CCMP = 4,
+  ENC_TYPE_WPA2 = ENC_TYPE_CCMP,
+  ENC_TYPE_GCMP = 6,
+  ENC_TYPE_WPA3 = ENC_TYPE_GCMP,
   /* ... except these two, 7 and 8 are reserved in 802.11-2007 */
   ENC_TYPE_NONE = 7,
   ENC_TYPE_AUTO = 8,
@@ -84,14 +91,14 @@ public:
   IPAddress localIP();
   IPAddress gatewayIP();
   IPAddress subnetMask();
-  IPAddress dnsServer1();
-  IPAddress dnsServer2();
+  IPAddress dnsIP(int n = 0);
   bool dhcpIsEnabled();
 
   // WiFi network parameters
   const char* SSID(char* _ssid = ssid); // using the default parameter will take 33 bytes of SRAM
   uint8_t* BSSID(uint8_t* bssid);
-  int32_t RSSI();
+  uint8_t channel();
+  int8_t RSSI();
 
   // enumerate WiFi access points
   int8_t scanNetworks(); // using internal array will occupy a lot of SRAM
@@ -133,6 +140,15 @@ public:
   IPAddress apIP();
   IPAddress apGatewayIP();
   IPAddress apSubnetMask();
+
+  // esp8266 and esp32 compatible softAP functions
+  bool softAP(const char* ssid, const char* psk = NULL, int channel = 1, int ssid_hidden = 0, int max_connection = 4);
+  bool softAPConfig(IPAddress local_ip, IPAddress gateway, IPAddress subnet);
+  bool softAPdisconnect();
+  IPAddress softAPIP();
+  uint8_t* softAPmacAddress(uint8_t* mac);
+  String softAPSSID();
+  String softAPPSK();
 
   //
   const char* firmwareVersion(char* buffer = fwVersion);

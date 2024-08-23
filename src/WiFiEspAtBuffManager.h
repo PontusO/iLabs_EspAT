@@ -27,14 +27,16 @@ public:
 
   WiFiEspAtBuffManagerClass();
 
-  WiFiEspAtBuffStream* getBuffStream(uint8_t linkId, uint16_t serverPort, size_t rxBufferSize, size_t txBufferSize);
+  WiFiEspAtBuffStream* getBuffStream(uint8_t linkId, size_t rxBufferSize, size_t txBufferSize);
 
   void freeUnused();
 
 private:
 
   WiFiEspAtBuffStream* pool[WIFIESPAT_LINKS_COUNT];
+  uint8_t serialId = 0;
 
+  uint8_t nextSerialId();
 };
 
 extern WiFiEspAtBuffManagerClass WiFiEspAtBuffManager;
